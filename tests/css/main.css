@@ -1,0 +1,48 @@
+
+body {
+  font-size: 10.5px;
+  font-family: monospace;
+}
+
+.center {
+  text-align: center;
+}
+
+.center > * {
+  text-align: left;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.fold {
+  margin-top: 60px;
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+  min-height: 600px;
+  padding: 20px;
+
+  background-color: #eee;
+
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+
+  -webkit-box-shadow: inset 2px 2px 2px #ccc, inset -2px -2px 2px #ccc;
+  -moz-box-shadow: inset 2px 2px 2px #ccc, inset -2px -2px 2px #ccc;
+  box-shadow: inset 2px 2px 4px #ccc, inset -2px -2px 4px #ccc;
+
+}
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.log > li > span:first-child {
+  display: inline-block;
+  width: 130px;
+}
