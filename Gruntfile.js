@@ -70,7 +70,7 @@ module.exports = function( grunt ) {
       },
       all: {
         files: {
-          'dist/paraload.min.js': ['src/promise.js', 'src/paraload.js']
+          'dist/paraload.min.js': ['lib/whif/src/whif.js', 'src/paraload.js']
         }
       }
     }

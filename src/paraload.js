@@ -12,13 +12,13 @@ if ( typeof DEBUG === 'undefined' ) {
     );
   };
 
-  DEBUG.log = ( function( root, Promise ) {
+  DEBUG.log = ( function( root, whif ) {
 
     var document = root.document,
 
       LOGID = 'log',
 
-      log = Promise( function( resolve, reject ) {
+      log = whif( function( resolve, reject ) {
         var log_elem;
         ( function poll() {
           log_elem = document.getElementById( LOGID );
@@ -47,20 +47,20 @@ if ( typeof DEBUG === 'undefined' ) {
       } )
     };
 
-  }( this, Promise ) )
+  }( this, whif ) )
 }
 
 // Deferred Javascript
 // ===================
 
-( function( window, Promise ) {
+( function( window, whif ) {
 
   // baseline setup
   // ==============
 
   var // one to var them all
 
-  version = '0.0.1',
+  version = '0.2.0',
 
   // regular expressions
   // -------------------
@@ -125,6 +125,7 @@ if ( typeof DEBUG === 'undefined' ) {
         target[ key ] = source[ key ];
       }
     }
+    return target;
   }
 
   function ext( url ) {
@@ -140,9 +141,7 @@ if ( typeof DEBUG === 'undefined' ) {
   }
 
   function createElement( tag_name, attributes ) {
-    var elem = document.createElement( tag_name );
-    extend( elem, attributes );
-    return elem;
+    return extend( document.createElement( tag_name ), attributes );
   }
 
   function insertInto( parent, node ) {
@@ -154,18 +153,11 @@ if ( typeof DEBUG === 'undefined' ) {
 
   function on( elem, callback ) {
 
-    // bind handler
     elem.onload = elem.onerror = elem.onreadystatechange = function() {
 
       if ( DEBUG ) {
         var e = arguments[ 0 ] || window.event;
-        DEBUG.log(
-          elem.nodeName,
-          e.type,
-          e.message,
-          elem.readyState,
-          elem.src || elem.href
-        );
+        DEBUG.log( elem.nodeName, e.type, elem.readyState, elem.src || elem.href );
       }
 
       // images not inserted into the DOM will always be `'uninitialized'`
@@ -187,8 +179,10 @@ if ( typeof DEBUG === 'undefined' ) {
   // ========
 
   paraload.load = function( url ) {
+
     DEBUG && DEBUG.log( 'loading', url )
-    return new Promise( function( resolve ) {
+
+    return whif( function( resolve ) {
 
       var elem, orphan;
 
@@ -203,8 +197,15 @@ if ( typeof DEBUG === 'undefined' ) {
 
       on( elem, function() {
         off( elem );
-        orphan && document.adoptNode( orphan );
+        if( orphan ){
+          off( orphan );
+          orphan = document.adoptNode( orphan );
+        }
+
+        elem = orphan = null;
+
         DEBUG && DEBUG.log( 'loaded', url );
+
         resolve( url );
       } );
 
@@ -219,8 +220,10 @@ if ( typeof DEBUG === 'undefined' ) {
   };
 
   paraload.exec = function( url ) {
+
     DEBUG && DEBUG.log( 'executing', url )
-    return new Promise( function( resolve ) {
+
+    return whif( function( resolve ) {
       
       var extension = ext( url ), elem;
 
@@ -239,6 +242,7 @@ if ( typeof DEBUG === 'undefined' ) {
 
       on( elem, function() {
         off( elem );
+        elem = null;
         DEBUG && DEBUG.log( 'executed', url );
         resolve( url );
       } );
@@ -247,8 +251,8 @@ if ( typeof DEBUG === 'undefined' ) {
     } );
   }
 
-  // traversing the tree
-  // -------------------
+  // dependency tree traversal
+  // =========================
 
   DEBUG && DEBUG.log( '------------------------------------------' );
 
@@ -259,6 +263,23 @@ if ( typeof DEBUG === 'undefined' ) {
 
     // text nodes
     // ----------
+    // for each node on this level - verbose functional:
+    // ```
+    // node
+    //  .nodeValue
+    //  .split( re_lines )
+    //  .map( String.trim )
+    //  .filter( function( str ){ return !!str })
+    //  .forEach( function( url ){
+    //    var loaded = paraload.load( url );
+    //    var group = whif.group( loaded, promise );
+    //    group.then( function( values ){
+    //      var loaded_url = values[ 0 ];
+    //      var executed = paraload.exec( loaded_url );
+    //      return executed;
+    //    } )
+    //  } )
+    // ```
     for ( ; node; node = node.nextSibling ) {
 
       if ( node.nodeType === 3 ) {
@@ -273,16 +294,15 @@ if ( typeof DEBUG === 'undefined' ) {
           url = string_trim.call( url );
 
           if ( url ) {
+
             DEBUG && DEBUG.log( 'found', url );
 
-            promises.push(
-              Promise
-              .group( paraload.load( url ), promise )
-              .then( function( values ) {
-                var url = values[ 0 ];
-                return paraload.exec( url );
-              } )
-            );
+            promises
+              .push( whif
+                .group( paraload.load( url ), promise )
+                .then( function( values ) {
+                  return paraload.exec( values[ 0 ] );
+            }));
           }
         }
       }
@@ -292,7 +312,7 @@ if ( typeof DEBUG === 'undefined' ) {
     // -------------
 
     node = node_reset;
-    var group = promises.length ? Promise.group.apply( 0, promises ) : promise;
+    var group = promises.length ? whif.group.apply( 0, promises ) : promise;
 
     for ( ; node; node = node.nextSibling ) {
       if ( node.nodeType === 1 && node.firstChild ) {
@@ -300,10 +320,10 @@ if ( typeof DEBUG === 'undefined' ) {
       }
     }
 
-  } )( tree_root, ( new Promise ).resolve() );
+  } )( tree_root, whif()._resolve() );
 
   // export
-  // ------
+  // ======
 
   var previous_paraload = window.paraload;
 
@@ -314,4 +334,4 @@ if ( typeof DEBUG === 'undefined' ) {
 
   window.paraload = paraload;
 
-}( this, Promise ) )
+}( this, whif ) )

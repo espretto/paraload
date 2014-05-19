@@ -1,0 +1,3 @@
+[submodule "lib/whif"]
+	path = lib/whif
+	url = git@github.com:espretto/whif
