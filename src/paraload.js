@@ -28,7 +28,7 @@ if ( typeof DEBUG === 'undefined' ) {
             resolve( log_elem )
           }
         }() )
-      } ),
+      }, true ),
 
       now = DEBUG.now();
 
@@ -182,7 +182,7 @@ if ( typeof DEBUG === 'undefined' ) {
 
     DEBUG && DEBUG.log( 'loading', url )
 
-    return whif( function( resolve ) {
+    return new whif( function( resolve ) {
 
       var elem, orphan;
 
@@ -216,14 +216,14 @@ if ( typeof DEBUG === 'undefined' ) {
         elem = head.removeChild( elem );
         orphan = orphanage.adoptNode( elem );
       }
-    } );
+    }, true );
   };
 
   paraload.exec = function( url ) {
 
     DEBUG && DEBUG.log( 'executing', url )
 
-    return whif( function( resolve ) {
+    return new whif( function( resolve ) {
       
       var extension = ext( url ), elem;
 
@@ -248,7 +248,7 @@ if ( typeof DEBUG === 'undefined' ) {
       } );
 
       insertInto( head, elem );
-    } );
+    }, true );
   }
 
   // dependency tree traversal
@@ -297,12 +297,12 @@ if ( typeof DEBUG === 'undefined' ) {
 
             DEBUG && DEBUG.log( 'found', url );
 
-            promises
-              .push( whif
-                .group( paraload.load( url ), promise )
-                .then( function( values ) {
-                  return paraload.exec( values[ 0 ] );
-            }));
+            promises.push( whif
+              .group( [ paraload.load( url ), promise ], true )
+              .then( function( values ) {
+                return paraload.exec( values[ 0 ] );
+              }, null, true)
+            );
           }
         }
       }
@@ -312,7 +312,7 @@ if ( typeof DEBUG === 'undefined' ) {
     // -------------
 
     node = node_reset;
-    var group = promises.length ? whif.group.apply( 0, promises ) : promise;
+    var group = promises.length ? whif.group( promises, true ) : promise;
 
     for ( ; node; node = node.nextSibling ) {
       if ( node.nodeType === 1 && node.firstChild ) {
@@ -320,7 +320,7 @@ if ( typeof DEBUG === 'undefined' ) {
       }
     }
 
-  } )( tree_root, whif()._resolve() );
+  } )( tree_root, whif( null, true )._resolve() );
 
   // export
   // ======
