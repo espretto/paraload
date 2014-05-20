@@ -1,7 +1,7 @@
 paraload
 ========
 
-asset loader ( ~1.7 kb minified and gzipped ) for parallel loading yet ordered execution of `<script>`s ( and `<link>`s ) with respect to their dependencies.
+asset loader ( ~1.8 kb minified and gzipped ) for parallel loading yet ordered execution of `<script>`s ( and `<link>`s ) with respect to their dependencies.
 
 usage
 -----
@@ -81,11 +81,11 @@ $ npm install
 
 ### build
 - generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/paraload.min.js` for production environments ( ~3.6 kb )
+- uglifys source to `./dist/paraload.min.js` for production environments ( ~3.8 kb )
 ```sh
 $ grunt build
 ```
-for convenience there is a ready-made gzip command to further compress the minified version to `./dist/promise.min.js.gz` ( ~1.7 kb ( requires gzip ))
+for convenience there is a ready-made gzip command to further compress the minified version to `./dist/promise.min.js.gz` ( ~1.8 kb ( requires gzip ))
 ```sh
 $ npm run-script gzip
 ```
@@ -96,3 +96,7 @@ $ npm run-script gzip
 $ python -m SimpleHTTPServer
 ```
 then fire up your favorite browser and point it to [localhost:8000/tests](http://localhost:8000/test) to run the tests or [localhost:8000/docs](http://localhost:8000/docs/src/promise.js.html) to read paraload's story - the annotated source.
+
+licence
+-------
+[MIT](http://mariusrunge.com/mit-licence.html)
