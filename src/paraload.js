@@ -60,7 +60,7 @@
   // HTML or XML?
   // ------------
 
-  if ( tree_root.XMLDocument ) {
+  if ( tree_root && tree_root.XMLDocument ) {
     tree_root = tree_root.XMLDocument.documentElement;
   }
 
