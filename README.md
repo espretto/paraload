@@ -5,7 +5,7 @@ asset loader ( ~1.8 kb minified and gzipped ) for parallel loading yet ordered e
 
 usage
 -----
-loads all listed resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>`, one root tag within ( no root siblings ), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be loaded as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level resources have been executed.
+loads all listed resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>`, one root tag within ( no root siblings ), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be executed as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level resources have been executed.
 
 ```html
 ...
@@ -31,18 +31,14 @@ public api
 paraload exposes two static functions which both return promises.
 ```js
 paraload
-  // works for './styles.css', too
-  .load( 'url/to/script.js' )
+  .load( 'url/to/script.js' ) // resolves with the url
+  .then( paraload.exec )      // returns another promise
   .then( function( url ){
-    paraload
-      .exec( url )
-      .then( function( url ){
-        // dependent code
-      });
-  }, function( reason ){
-    // todo: timeout
+    // dependent code
+  })
+  .then( null, function( reason ){
+    // roadmap: timeout
   });
-});
 
 var rename = paraload.noConflict();
 ```
@@ -52,10 +48,10 @@ how it works
 ### load without execution
 a script is loaded via an `<img>` tag with its `src` attribute set. when loaded, the element's `error` event fires, the script gets inserted into the DOM which will fetch the already loaded file from the browser's cache and execute it immediately. this process is wrapped in a promise which, when resolved, executes the next lower level's scripts as soon as these are loaded.
 
-Firefox however, uses a separate cache for `<img>`s, which leads to the script being loaded twice. other implementations like [ControlJS][1] or [headjs][2] wait until the `<body>` tag is rendered and then insert `<object>` tags using their `data` attribute to set the url. paraload however, uses `document.implementation.createDocument` to create an internal, non-active document to `adoptNode` once inserted `<script>` tags which will then not be executed when loaded but fire their error event just like the `<img>` tag did.
+Firefox however, uses a separate cache for `<img>`s, which leads to the script being loaded twice. other implementations like [ControlJS][1] or [headjs][2] wait until the `<body>` tag is rendered and then insert `<object>` tags using their `data` attribute to set the url. paraload however, uses `document.implementation.createDocument` to create an internal, non-active document to `adoptNode` once inserted `<script>` tags which won't be executed when loaded but fire their error event just like the `<img>` tag did.
 
 ### why `<xml>`?
-IE < 10 still parses [XML data islands][3] which is an abandoned feature once used to simply serve xml data within HTML pages e.g. for reuse within country select fields. those browsers will thus parse the XML and not render it onto the screen while it's still accessible to javascript. the names given to the tags can thus be given at random and chosen as short as possible. if the `<xml>` tag was different IE would render its `textContent` but ignore the tags completely.
+IE < 10 still parses [XML data islands][3] which is an abandoned feature once used to simply serve xml data within HTML pages e.g. for reuse within select fields. those browsers will thus parse the XML and not render it onto the screen while it's still accessible to javascript. the names given to the tags can thus be given at random and chosen as short as possible. if the `<xml>` tag was different IE would render its `textContent` but ignore the tags completely ( unless you inlined `document.createElement('special-tagname')` beforehand ).
 
 all other browsers render unknown tags as default DOM elements. that's why we have to add the inline `style="display:none"` ( or `class="hide"` from your already loaded css in case you don't mind the [FOUC][4], though you should ). their parsed HTML is of course equally traversable like IE's XML.
 
