@@ -5,7 +5,7 @@ asset loader ( ~1.8 kb minified and gzipped ) for parallel loading yet ordered e
 
 usage
 -----
-loads all listed resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>`, one root tag within ( no root siblings ), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be loaded as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level resources have been executed.
+loads all listed resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>`, one root tag within ( no root siblings ), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be executed as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level resources have been executed.
 
 ```html
 ...
