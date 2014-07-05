@@ -57,8 +57,6 @@
     tree_root = tree_root.XMLDocument.documentElement;
   }
 
-  DEBUG && DEBUG.log('tree root: ', tree_root.nodeName);
-
   // helpers
   // -------
 
@@ -95,16 +93,9 @@
   // event handling
   // --------------
 
+  // images not inserted into the DOM will always be `'uninitialized'`
   function on(elem, callback) {
-
     elem.onload = elem.onerror = elem.onreadystatechange = function() {
-
-      if (DEBUG) {
-        var e = arguments[0] || window.event;
-        DEBUG.log(elem.nodeName, e.type, elem.readyState, elem.src || elem.href);
-      }
-
-      // images not inserted into the DOM will always be `'uninitialized'`
       var readyState = elem.readyState;
       if (
         elem.nodeName === 'IMG' ||
@@ -125,11 +116,7 @@
   // ========
 
   paraload.load = function(url) {
-
-    DEBUG && DEBUG.log('loading', url)
-
     return new whif(function(resolve) {
-
       var elem, orphan;
 
       if (orphanage) {
@@ -147,11 +134,7 @@
           off(orphan);
           orphan = document.adoptNode(orphan);
         }
-
         elem = orphan = null;
-
-        DEBUG && DEBUG.log('loaded', url);
-
         resolve(url);
       });
 
@@ -162,17 +145,12 @@
         elem = head.removeChild(elem);
         orphan = orphanage.adoptNode(elem);
       }
-    }, true);
+    });
   };
 
   paraload.exec = function(url) {
-
-    DEBUG && DEBUG.log('executing', url)
-
     return new whif(function(resolve) {
-
-      var extension = ext(url),
-        elem;
+      var extension = ext(url), elem;
 
       if (extension === 'css') {
         elem = createElement('LINK', {
@@ -190,12 +168,11 @@
       on(elem, function() {
         off(elem);
         elem = null;
-        DEBUG && DEBUG.log('executed', url);
         resolve(url);
       });
 
       insertInto(head, elem);
-    }, true);
+    });
   }
 
   // dependency tree traversal
@@ -204,7 +181,6 @@
   DEBUG && DEBUG.log('------------------------------------------');
 
   (function traverse(node, promise) {
-
     var node_reset = node,
       promises = [],
       promise_group,
@@ -212,34 +188,17 @@
       lines,
       url;
 
-    // text nodes
-    // ----------
-    // for each node on this level - verbose functional:
-    // ```
-    // node
-    //  .nodeValue
-    //  .split( re_lines )
-    //  .map( String.trim )
-    //  .filter( function( str ){ return !!str })
-    //  .forEach( function( url ){
-    //    var loaded = paraload.load( url );
-    //    var group = whif.group( [ loaded, promise ] );
-    //    group.then( function( values ){
-    //      var loaded_url = values[ 0 ];
-    //      var executed = paraload.exec( loaded_url );
-    //      return executed;
-    //    } )
-    //  } )
-    // ```
     for (; node; node = node.nextSibling) {
       if (node.nodeType === 3) {
         for (lines = node.nodeValue.split(re_lines); lines.length;) {
           url = string_trim.call(lines.shift());
           if (url) {
-            DEBUG && DEBUG.log('found', url);
-            promises.push(whif.group([paraload.load(url), promise], true).then(function(values) {
-              return paraload.exec(values[0]);
-            }, null, true));
+            promises.push(whif
+              .group([paraload.load(url), promise])
+              .then(function(values) {
+                return paraload.exec(values[0]);
+              })
+            );
           }
         }
       }
@@ -249,7 +208,7 @@
     // -------------
 
     node = node_reset;
-    promise_group = promises.length ? whif.group(promises, true) : promise;
+    promise_group = promises.length ? whif.group(promises) : promise;
 
     for (; node; node = node.nextSibling) {
       firstChild = node.firstChild;
@@ -258,7 +217,7 @@
       }
     }
 
-  })(tree_root, whif(null, true)._resolve());
+  })(tree_root, new whif()._resolve());
 
   // export
   // ======
