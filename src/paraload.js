@@ -10,20 +10,17 @@
 
   var // one to var them all
 
-  version = '0.2.0',
-
   // regular expressions
   // -------------------
 
   re_trim = /^\s\s*|\s*\s$/g,
   re_ext = /\.([^\.\/][^\.\/\?#]*)([?#]|$)/,
-  re_lines = /\n/g,
-  re_readystate = /complete|loaded/,
+  re_lines = /\r?\n|\u2028|\u2029/g,
 
   // quick access to natives
   // -----------------------
 
-  string_trim = version.trim || function () {
+  string_trim = ''.trim || function() {
     return this.replace(re_trim, '');
   },
 
@@ -33,12 +30,7 @@
   document = window.document,
   implementation = document.implementation,
   head = document.head || getElementByTagName('HEAD'),
-
-  tree_root = (
-    document.getElementById('paraload') ||
-    getElementByTagName('XML')
-  ),
-
+  tree_root = document.getElementById('paraload') || getElementByTagName('XML'),
   isFirefox = typeof window.InstallTrigger !== 'undefined',
 
   // Firefox specific
@@ -54,7 +46,9 @@
   // public namespace
   // ----------------
 
-  paraload = {};
+  paraload = {
+    version: '0.2.0'
+  };
 
   // HTML or XML?
   // ------------
@@ -62,8 +56,6 @@
   if (tree_root && tree_root.XMLDocument) {
     tree_root = tree_root.XMLDocument.documentElement;
   }
-
-  DEBUG && DEBUG.log('tree root: ', tree_root.nodeName);
 
   // helpers
   // -------
@@ -101,20 +93,15 @@
   // event handling
   // --------------
 
+  // images not inserted into the DOM will always be `'uninitialized'`
   function on(elem, callback) {
-
-    elem.onload = elem.onerror = elem.onreadystatechange = function () {
-
-      if (DEBUG) {
-        var e = arguments[0] || window.event;
-        DEBUG.log(elem.nodeName, e.type, elem.readyState, elem.src || elem.href);
-      }
-
-      // images not inserted into the DOM will always be `'uninitialized'`
+    elem.onload = elem.onerror = elem.onreadystatechange = function() {
       var readyState = elem.readyState;
       if (
-        elem.nodeName === 'IMG' || !readyState ||
-        re_readystate.test(readyState)
+        elem.nodeName === 'IMG' ||
+        !readyState ||
+        readyState === 'complete' ||
+        readyState === 'loaded'
       ) {
         callback();
       }
@@ -128,12 +115,8 @@
   // paraload
   // ========
 
-  paraload.load = function (url) {
-
-    DEBUG && DEBUG.log('loading', url)
-
-    return new whif(function (resolve) {
-
+  paraload.load = function(url) {
+    return new whif(function(resolve) {
       var elem, orphan;
 
       if (orphanage) {
@@ -145,17 +128,13 @@
         elem = createElement('IMG');
       }
 
-      on(elem, function () {
+      on(elem, function() {
         off(elem);
         if (orphan) {
           off(orphan);
           orphan = document.adoptNode(orphan);
         }
-
         elem = orphan = null;
-
-        DEBUG && DEBUG.log('loaded', url);
-
         resolve(url);
       });
 
@@ -166,17 +145,12 @@
         elem = head.removeChild(elem);
         orphan = orphanage.adoptNode(elem);
       }
-    }, true);
+    });
   };
 
-  paraload.exec = function (url) {
-
-    DEBUG && DEBUG.log('executing', url)
-
-    return new whif(function (resolve) {
-
-      var extension = ext(url),
-        elem;
+  paraload.exec = function(url) {
+    return new whif(function(resolve) {
+      var extension = ext(url), elem;
 
       if (extension === 'css') {
         elem = createElement('LINK', {
@@ -191,44 +165,39 @@
         });
       }
 
-      on(elem, function () {
+      on(elem, function() {
         off(elem);
         elem = null;
-        DEBUG && DEBUG.log('executed', url);
         resolve(url);
       });
 
       insertInto(head, elem);
-    }, true);
+    });
   }
 
   // dependency tree traversal
   // =========================
 
-  DEBUG && DEBUG.log('------------------------------------------');
-
   (function traverse(node, promise) {
 
     var node_reset = node,
-      promises = [];
+      promises = [],
+      promise_group,
+      firstChild,
+      lines,
+      url;
 
     for (; node; node = node.nextSibling) {
-
       if (node.nodeType === 3) {
-
-        var lines = node.nodeValue.split(re_lines),
-          line, url;
-
-        while (line = lines.pop()) {
-          url = string_trim.call(line);
-
+        for (lines = node.nodeValue.split(re_lines); lines.length;) {
+          url = string_trim.call(lines.shift());
           if (url) {
-
-            DEBUG && DEBUG.log('found', url);
-
-            promises.push(whif.group([paraload.load(url), promise], true).then(function (values) {
+            promises.push(whif
+              .group([paraload.load(url), promise])
+              .then(function(values) {
                 return paraload.exec(values[0]);
-            }, null, true));
+              })
+            );
           }
         }
       }
@@ -238,15 +207,16 @@
     // -------------
 
     node = node_reset;
-    var group = promises.length ? whif.group(promises, true) : promise;
+    promise_group = promises.length ? whif.group(promises) : promise;
 
     for (; node; node = node.nextSibling) {
-      if (node.nodeType === 1 && node.firstChild) {
-        traverse(node.firstChild, group);
+      firstChild = node.firstChild;
+      if (node.nodeType === 1 && firstChild) {
+        traverse(firstChild, promise_group);
       }
     }
 
-  })(tree_root, whif(null, true)._resolve());
+  })(tree_root, new whif()._resolve());
 
   // export
   // ======
