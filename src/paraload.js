@@ -22,7 +22,7 @@
   // quick access to natives
   // -----------------------
 
-  string_trim = ''.trim || function() {
+  stringTrim = ''.trim || function() {
     return this.replace(reTrim, '');
   },
 
@@ -190,7 +190,7 @@
     for (; node; node = node.nextSibling) {
       if (node.nodeType === 3) {
         for (lines = node.nodeValue.split(reLines); lines.length;) {
-          if (url = string_trim.call(lines.shift())) {
+          if (url = stringTrim.call(lines.shift())) {
             promises.push(
               whif.join([paraload.load(url), dependency]).then(execUrl)
             );
