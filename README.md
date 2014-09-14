@@ -1,11 +1,11 @@
 paraload
 ========
 
-asset loader ( ~1.8 kb minified and gzipped ) for parallel loading yet ordered execution of `<script>`s ( and `<link>`s ) with respect to their dependencies.
+paraload is an asset loader (~1.9kb minified and gzipped) for parallel loading yet ordered execution of `<script>`s and `<link>`s with respect to their dependencies. it ships with a minimal [Promisese A+ v1.1](http://promises-aplus.github.io/promises-spec/) compliant library [whif](https://github.com/espretto/whif), thus exposes two globals: `whif` and `paraload` (which you may both rename via `.noConflict()` hook).
 
 usage
 -----
-loads all listed resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>`, one root tag within ( no root siblings ), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be executed as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level resources have been executed.
+paraload loads all resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>` node, one root node within it (no root siblings), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be executed as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level's resources have been executed.
 
 ```html
 ...
@@ -24,19 +24,17 @@ loads all listed resources in parallel yet executes them in the order given by y
 ...
 ```
 
-paraload comes with [whif](https://github.com/espretto/whif) ( [Promisese A+ v1.1](http://promises-aplus.github.io/promises-spec/) compliant ), thus exposes two globals `whif` and `paraload` ( which you may both rename via `.noConflict()` hook ).
-
 public api
 ----------
 paraload exposes two static functions which both return promises.
 ```js
 paraload
-  .load( 'url/to/script.js' ) // resolves with the url
-  .then( paraload.exec )      // returns another promise
-  .then( function( url ){
+  .load('url/to/script.js') // resolves with the url
+  .then(paraload.exec)      // returns another promise
+  .then(function(url){
     // dependent code
   })
-  .then( null, function( reason ){
+  .then(null, function(reason){
     // roadmap: timeout
   });
 
@@ -51,9 +49,9 @@ a script is loaded via an `<img>` tag with its `src` attribute set. when loaded,
 Firefox however, uses a separate cache for `<img>`s, which leads to the script being loaded twice. other implementations like [ControlJS][1] or [headjs][2] wait until the `<body>` tag is rendered and then insert `<object>` tags using their `data` attribute to set the url. paraload however, uses `document.implementation.createDocument` to create an internal, non-active document to `adoptNode` once inserted `<script>` tags which won't be executed when loaded but fire their error event just like the `<img>` tag did.
 
 ### why `<xml>`?
-IE < 10 still parses [XML data islands][3] which is an abandoned feature once used to simply serve xml data within HTML pages e.g. for reuse within select fields. those browsers will thus parse the XML and not render it onto the screen while it's still accessible to javascript. the names given to the tags can thus be given at random and chosen as short as possible. if the `<xml>` tag was different IE would render its `textContent` but ignore the tags completely ( unless you inlined `document.createElement('special-tagname')` beforehand ).
+IE < 10 still parses [XML data islands][3] which is an abandoned feature once used to simply serve xml data within HTML pages e.g. for reuse within select fields. those browsers will thus parse the XML and not render it onto the screen while it's still accessible to javascript. the names given to the tags can thus be given at random and chosen as short as possible. if the `<xml>` tag was different IE would render its `textContent` but ignore the tags completely (unless you inlined `document.createElement('special-tagname')` beforehand).
 
-all other browsers render unknown tags as default DOM elements. that's why we have to add the inline `style="display:none"` ( or `class="hide"` from your already loaded css in case you don't mind the [FOUC][4], though you should ). their parsed HTML is of course equally traversable like IE's XML.
+all other browsers render unknown tags as default DOM elements. that's why we have to add the inline `style="display:none"` (or `class="hide"` from your already loaded css in case you don't mind the [FOUC][4], though you should). their parsed HTML is of course equally traversable like IE's XML.
 
 [1]: http://stevesouders.com/controljs/
 [2]: http://headjs.com/
@@ -77,16 +75,16 @@ $ npm install
 
 ### build
 - generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/paraload.min.js` for production environments ( ~3.8 kb )
+- uglifys source to `./dist/paraload.min.js` for production environments (~4kb)
 ```sh
 $ grunt build
 ```
-for convenience there is a ready-made gzip command to further compress the minified version to `./dist/promise.min.js.gz` ( ~1.8 kb ( requires gzip ))
+for convenience there is a ready-made gzip command to further compress the minified version to `./dist/promise.min.js.gz` (~1.9kb (requires gzip))
 ```sh
 $ npm run-script gzip
 ```
 ### run tests in your browser
-( requires `grunt build` )
+(requires `grunt build`)
 
 ```sh
 $ python -m SimpleHTTPServer
