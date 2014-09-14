@@ -15,15 +15,15 @@
   // regular expressions
   // -------------------
 
-  re_trim = /^\s\s*|\s*\s$/g,
-  re_ext = /\.([^\.\/][^\.\/\?#]*)([?#]|$)/,
-  re_lines = /\r?\n|\u2028|\u2029/g,
+  reTrim = /^\s\s*|\s*\s$/g,
+  reExt = /\.([^\.\/][^\.\/\?#]*)([?#]|$)/,
+  reLines = /\r?\n|\u2028|\u2029/g,
 
   // quick access to natives
   // -----------------------
 
   string_trim = ''.trim || function() {
-    return this.replace(re_trim, '');
+    return this.replace(reTrim, '');
   },
 
   // DOM reflection
@@ -32,7 +32,7 @@
   document = window.document,
   implementation = document.implementation,
   head = document.head || getElementByTagName('HEAD'),
-  tree_root = document.getElementById('paraload') || getElementByTagName('XML'),
+  treeRoot = document.getElementById('paraload') || getElementByTagName('XML'),
   isFirefox = typeof window.InstallTrigger !== 'undefined',
 
   // Firefox specific
@@ -49,32 +49,22 @@
   // ----------------
 
   paraload = {
-    version: '0.2.1'
+    version: '0.2.2'
   };
 
   // HTML or XML?
   // ------------
 
-  if (tree_root && tree_root.XMLDocument) {
-    tree_root = tree_root.XMLDocument.documentElement;
+  if (treeRoot && treeRoot.XMLDocument) {
+    treeRoot = treeRoot.XMLDocument.documentElement;
   }
 
   // helpers
   // -------
 
-  function extend(target, source) {
-    for (var key in source) {
-      // ignore don't enum bug
-      if (source.hasOwnProperty(key)) {
-        target[key] = source[key];
-      }
-    }
-    return target;
-  }
-
   function ext(url) {
     // re-/abuse `url` as match assignee
-    return (url = re_ext.exec(url)) && url[1];
+    return (url = reExt.exec(url)) && url[1];
   }
 
   // helpers DOM
@@ -85,7 +75,13 @@
   }
 
   function createElement(tag_name, attributes) {
-    return extend(document.createElement(tag_name), attributes);
+    var elem = document.createElement(tag_name);
+    for(var key in attributes){
+      if(attributes.hasOwnProperty(key)){
+        elem.setAttribute(key, attributes[key]);
+      }
+    }
+    return elem;
   }
 
   function insertInto(parent, node) {
@@ -182,9 +178,8 @@
 
   (function traverse(node, dependency) {
 
-    var node_reset = node,
+    var nodeReset = node,
       promises = [],
-      promise_group,
       firstChild,
       lines,
       url,
@@ -194,7 +189,7 @@
 
     for (; node; node = node.nextSibling) {
       if (node.nodeType === 3) {
-        for (lines = node.nodeValue.split(re_lines); lines.length;) {
+        for (lines = node.nodeValue.split(reLines); lines.length;) {
           if (url = string_trim.call(lines.shift())) {
             promises.push(
               whif.join([paraload.load(url), dependency]).then(execUrl)
@@ -207,25 +202,25 @@
     // element nodes
     // -------------
 
-    node = node_reset;
-    promise_group = promises.length ? whif.join(promises) : dependency;
+    node = nodeReset;
+    dependency = promises.length ? whif.join(promises) : dependency;
 
     for (; node; node = node.nextSibling) {
       firstChild = node.firstChild;
       if (node.nodeType === 1 && firstChild) {
-        traverse(firstChild, promise_group);
+        traverse(firstChild, dependency);
       }
     }
 
-  }(tree_root, whif.resolve()));
+  }(treeRoot, whif.resolve()));
 
   // export
   // ======
 
-  var previous_paraload = window.paraload;
+  var previousParaload = window.paraload;
 
   paraload.noConflict = function () {
-    window.paraload = previous_paraload;
+    window.paraload = previousParaload;
     return paraload;
   };
 
