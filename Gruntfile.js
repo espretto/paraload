@@ -1,4 +1,4 @@
-module.exports = function( grunt ) {
+module.exports = function(grunt) {
   
   var 
 
@@ -8,7 +8,7 @@ module.exports = function( grunt ) {
     'src/paraload.js'
   ];
 
-  grunt.initConfig( {
+  grunt.initConfig({
 
     clean: {
       docs: {
@@ -73,25 +73,33 @@ module.exports = function( grunt ) {
           'dist/paraload.min.js': ['lib/whif/src/whif.js', 'src/paraload.js']
         }
       }
-    }
+    },
 
-  } );
+    jshint: {
+      options: {
+        jshintrc: '.jshintrc'
+      },
+      all: ['src/paraload.js', 'Gruntfile.js']
+    },
+
+  });
 
   // task libs
   [
     'grunt-contrib-clean',
     'grunt-contrib-uglify',
+    'grunt-contrib-jshint',
     'grunt-docker',
-  ].forEach( grunt.loadNpmTasks, grunt );
+  ].forEach(grunt.loadNpmTasks, grunt);
 
   // task definitions
-  grunt.registerTask( 'build:docs', [
+  grunt.registerTask('docs', [
     'clean:docs',
     'docker'
   ]);
 
-  grunt.registerTask( 'build', [
-    'build:docs',
+  grunt.registerTask('default', [
+    'jshint',
     'uglify'
   ]);
-}
+};

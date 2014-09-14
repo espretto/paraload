@@ -3,6 +3,8 @@
  * http://mariusrunge.com/mit-licence.html
  */
 
+/* global whif */
+
 (function (window, whif) {
 
   // baseline setup
@@ -40,14 +42,14 @@
     isFirefox &&
     document.adoptNode &&
     implementation &&
-    implementation.createDocument('', '')
+    implementation.createDocument('', '', null)
   ),
 
   // public namespace
   // ----------------
 
   paraload = {
-    version: '0.2.0'
+    version: '0.2.1'
   };
 
   // HTML or XML?
@@ -105,7 +107,7 @@
       ) {
         callback();
       }
-    }
+    };
   }
 
   function off(elem) {
@@ -173,30 +175,29 @@
 
       insertInto(head, elem);
     });
-  }
+  };
 
   // dependency tree traversal
   // =========================
 
-  (function traverse(node, promise) {
+  (function traverse(node, dependency) {
 
     var node_reset = node,
       promises = [],
       promise_group,
       firstChild,
       lines,
-      url;
+      url,
+      execUrl = function(values){
+        return paraload.exec(values[0]);
+      };
 
     for (; node; node = node.nextSibling) {
       if (node.nodeType === 3) {
         for (lines = node.nodeValue.split(re_lines); lines.length;) {
-          url = string_trim.call(lines.shift());
-          if (url) {
-            promises.push(whif
-              .group([paraload.load(url), promise])
-              .then(function(values) {
-                return paraload.exec(values[0]);
-              })
+          if (url = string_trim.call(lines.shift())) {
+            promises.push(
+              whif.join([paraload.load(url), dependency]).then(execUrl)
             );
           }
         }
@@ -207,7 +208,7 @@
     // -------------
 
     node = node_reset;
-    promise_group = promises.length ? whif.group(promises) : promise;
+    promise_group = promises.length ? whif.join(promises) : dependency;
 
     for (; node; node = node.nextSibling) {
       firstChild = node.firstChild;
@@ -216,7 +217,7 @@
       }
     }
 
-  })(tree_root, new whif()._resolve());
+  }(tree_root, whif.resolve()));
 
   // export
   // ======
@@ -226,8 +227,8 @@
   paraload.noConflict = function () {
     window.paraload = previous_paraload;
     return paraload;
-  }
+  };
 
   window.paraload = paraload;
 
-}(this, whif))
+}(this, whif));
