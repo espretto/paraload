@@ -11,8 +11,6 @@
 // log via `DEBUG && DEBUG.log(seperated, by, space)`.
 // 
 
-/* global whif */
-
 if (typeof DEBUG === 'undefined') (function(window){
 
   var DEBUG = window.DEBUG = {},
@@ -20,37 +18,41 @@ if (typeof DEBUG === 'undefined') (function(window){
       arrayJoin = [].join,
       perf = window.performance,
       doc = window.document,
-      log,
-      time;
+      elem,
+      time,
+      cache = [];
 
-  log = whif(function(resolve, reject) {
-    (function poll(elem) {
-      elem = doc.getElementById(LOGID);
-      if (!elem) setTimeout(poll, 15);
-      else resolve(elem);
-    }());
-  });
-
-  DEBUG.now = perf && perf.now.bind(perf) || Date.now || function(){
-    return new Date().getTime();
-  };
+  DEBUG.now = (
+    perf && perf.now.bind(perf) ||
+    Date.now ||
+    function(){ return new Date().getTime(); }
+  );
 
   time = DEBUG.now();
 
-  DEBUG.log = function() {
-    var text = [].join.call(arguments, ' ');
+  (function poll(entry) {
+    elem = doc.getElementById(LOGID);
+    if (elem) while(cache.length) log(cache.shift());
+    else setTimeout(poll, 15);
+  }());
 
-    log.then(function(elem) {
-      var li = document.createElement('LI'),
-          span = document.createElement('SPAN'),
-          diffTime = (DEBUG.now() - time).toFixed(3);
-
-      span.appendChild(document.createTextNode(diffTime));
-      li.appendChild(span);
-      li.appendChild(document.createTextNode(text));
-      elem.appendChild(li);
+  DEBUG.log = function(entry) {
+    if(elem) log(entry);
+    else cache.push({
+      text: arrayJoin.call(arguments, ' '),
+      time: (DEBUG.now() - time).toFixed(3)
     });
   };
+
+  function log(entry){
+    var li = document.createElement('LI'),
+        span = document.createElement('SPAN');
+
+    span.appendChild(document.createTextNode(entry.time));
+    li.appendChild(span);
+    li.appendChild(document.createTextNode(entry.text));
+    elem.appendChild(li);
+  }
 
   DEBUG.log('debug-log', 'ready');
 
