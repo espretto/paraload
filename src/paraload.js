@@ -70,12 +70,12 @@
   // helpers DOM
   // -----------
 
-  function getElementByTagName(tag_name) {
-    return document.getElementsByTagName(tag_name)[0];
+  function getElementByTagName(tagName) {
+    return document.getElementsByTagName(tagName)[0];
   }
 
-  function createElement(tag_name, attributes) {
-    var elem = document.createElement(tag_name);
+  function createElement(tagName, attributes) {
+    var elem = document.createElement(tagName);
     for(var key in attributes){
       if(attributes.hasOwnProperty(key)){
         elem.setAttribute(key, attributes[key]);
