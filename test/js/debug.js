@@ -1,67 +1,57 @@
 
 // html log
 // ========
-// minimalistic logging via unordered html list.
+// minimalistic logging via unordered html list. meant to be use
+// in conjunction with uglify's ability to declare global variables,
+// namely `DEBUG`.
 // 
-// create log entry
-// ```
-// DEBUG && DEBUG.log( seperated, by, space )
-// ```
-// timestamps preceded.
+// usage
+// -----
+// add `<ul id="log"></ul>` to your html-document and
+// log via `DEBUG && DEBUG.log(seperated, by, space)`.
 // 
-// meant to be used in conjunction with uglify's ability
-// to declare global variables, namely `DEBUG`.
-// 
-// required html:
-// ```
-// <ul id="log"></ul>
-// ```
 
-if ( typeof DEBUG === 'undefined' ) {
+/* global whif */
 
-  DEBUG = {};
+if (typeof DEBUG === 'undefined') (function(window){
 
-  DEBUG.now = function() {
-    return (
-      window.performance && performance.now() ||
-      Date.now && Date.now() || +new Date()
-    );
+  var DEBUG = window.DEBUG = {},
+      LOGID = 'log',
+      arrayJoin = [].join,
+      perf = window.performance,
+      doc = window.document,
+      log,
+      time;
+
+  log = whif(function(resolve, reject) {
+    (function poll(elem) {
+      elem = doc.getElementById(LOGID);
+      if (!elem) setTimeout(poll, 15);
+      else resolve(elem);
+    }());
+  });
+
+  DEBUG.now = perf && perf.now.bind(perf) || Date.now || function(){
+    return new Date().getTime();
   };
 
-  DEBUG.log = ( function( root, whif ) {
+  time = DEBUG.now();
 
-    var document = root.document,
+  DEBUG.log = function() {
+    var text = [].join.call(arguments, ' ');
 
-    LOGID = 'log',
+    log.then(function(elem) {
+      var li = document.createElement('LI'),
+          span = document.createElement('SPAN'),
+          diffTime = (DEBUG.now() - time).toFixed(3);
 
-    log = whif( function( resolve, reject ) {
-      var log_elem;
-      ( function poll() {
-        log_elem = document.getElementById( LOGID );
-        if ( !log_elem ) {
-          setTimeout( poll, 15 );
-        } else {
-          resolve( log_elem )
-        }
-      }() )
-    }, true ),
+      span.appendChild(document.createTextNode(diffTime));
+      li.appendChild(span);
+      li.appendChild(document.createTextNode(text));
+      elem.appendChild(li);
+    });
+  };
 
-    now = DEBUG.now();
+  DEBUG.log('debug-log', 'ready');
 
-    return function() {
-      var message = [].join.call( arguments, ' ' );
-      log.then( function( log_elem ) {
-        var li_node = document.createElement( 'LI' );
-        var span_node = document.createElement( 'SPAN' );
-        var time = ( DEBUG.now() - now );
-        var time_node = document.createTextNode( time );
-        var text_node = document.createTextNode( message );
-        span_node.appendChild( time_node );
-        li_node.appendChild( span_node );
-        li_node.appendChild( text_node );
-        log_elem.appendChild( li_node );
-      } )
-    };
-
-  }( this, whif ) )
-}
+}(this));

@@ -79,7 +79,7 @@ module.exports = function(grunt) {
       options: {
         jshintrc: '.jshintrc'
       },
-      all: ['src/paraload.js', 'Gruntfile.js']
+      all: ['src/paraload.js', 'Gruntfile.js', 'test/js/debug.js']
     },
 
   });
