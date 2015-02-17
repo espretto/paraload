@@ -1,3 +1,7 @@
+
+var fs = require('fs');
+var pkg = JSON.parse(fs.readFileSync('package.json', 'UTF-8'));
+
 module.exports = function(grunt) {
   
   var 
@@ -63,7 +67,8 @@ module.exports = function(grunt) {
         preserveComments: 'some',
         compress: {
           global_defs: {
-            "DEBUG": false
+            __DEBUG__: false,
+            __VERSION__: pkg.version
           },
           dead_code: true
         }

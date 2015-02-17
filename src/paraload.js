@@ -3,40 +3,54 @@
  * http://mariusrunge.com/mit-licence.html
  */
 
-/* global whif */
+/* global whif, __VERSION__ */
 
 (function (window, whif) {
 
-  // baseline setup
-  // ==============
+  // private
+  // =======
+  // one to var them all
 
-  var // one to var them all
+  var document = window.document,
+  head = document.head || getFirstElementByTagName('HEAD'),
+  paraload = { VERSION: '0.2.3' },
 
-  // regular expressions
-  // -------------------
-
-  reTrim = /^\s\s*|\s*\s$/g,
-  reExt = /\.([^\.\/][^\.\/\?#]*)([?#]|$)/,
-  reLines = /\r?\n|\u2028|\u2029/g,
-
-  // quick access to natives
-  // -----------------------
-
-  stringTrim = ''.trim || function() {
-    return this.replace(reTrim, '');
+  // eventing
+  // --------
+  // properly added event listeners fire earlier. don't bother to fall
+  // back on IE's attach-/detachEvent though. you cannot .call() them :(
+  
+  readyStates = {
+    'undefined': true,
+    'complete': true,
+    'loaded': true
   },
 
-  // DOM reflection
-  // --------------
+  events = ['load', 'error', 'readystatechange'],
+  eCount = events.length,
 
-  document = window.document,
-  implementation = document.implementation,
-  head = document.head || getElementByTagName('HEAD'),
-  treeRoot = document.getElementById('paraload') || getElementByTagName('XML'),
-  isFirefox = typeof window.InstallTrigger !== 'undefined',
+  addEventListener = document.addEventListener || function (event, handler) {
+    this['on'+event] = handler;
+  },
 
+  removeEventListener = document.removeEventListener || function (event) {
+    this['on'+event] = null;
+  },
+
+  // string manipulation
+  // -------------------
+  reTrim = /^\s\s*|\s*\s$/g,
+  reLines = /\r?\n|\u2028|\u2029/g,
+  reFileExtension = /\.([^\.\/][^\.\/\?#]*)([?#]|$)/,
+
+  stringTrim = ''.trim || function () {
+    return this.replace(reTrim, '');
+  },
+  
   // Firefox specific
   // ----------------
+  implementation = document.implementation,
+  isFirefox = !readyStates[typeof window.InstallTrigger], // bytes for ugliness
 
   orphanage = (
     isFirefox &&
@@ -45,76 +59,56 @@
     implementation.createDocument('', '', null)
   ),
 
-  // public namespace
-  // ----------------
-
-  paraload = {
-    version: '0.2.2'
-  };
-
   // HTML or XML?
   // ------------
+  treeRoot = document.getElementById('paraload') || getFirstElementByTagName('XML'),
+  treeRoot_; // bytes for ugliness
 
-  if (treeRoot && treeRoot.XMLDocument) {
-    treeRoot = treeRoot.XMLDocument.documentElement;
-  }
-
-  // helpers
-  // -------
-
-  function ext(url) {
-    // re-/abuse `url` as match assignee
-    return (url = reExt.exec(url)) && url[1];
+  if (treeRoot && (treeRoot_ = treeRoot.XMLDocument)) {
+    treeRoot = treeRoot_.documentElement;
   }
 
   // helpers DOM
   // -----------
+  function insertInto (parent, node) {
+    parent.insertBefore(node, parent.lastChild);
+  }
 
-  function getElementByTagName(tagName) {
+  function getFirstElementByTagName (tagName) {
     return document.getElementsByTagName(tagName)[0];
   }
 
-  function createElement(tagName, attributes) {
-    var elem = document.createElement(tagName);
-    for(var key in attributes){
-      if(attributes.hasOwnProperty(key)){
+  function createElement (tagName, attributes) {
+    var elem = document.createElement(tagName), key;
+    for (key in attributes){
+      if (attributes.hasOwnProperty(key)){
         elem.setAttribute(key, attributes[key]);
       }
     }
     return elem;
   }
 
-  function insertInto(parent, node) {
-    parent.insertBefore(node, parent.lastChild);
-  }
-
   // event handling
   // --------------
-
-  // images not inserted into the DOM will always be `'uninitialized'`
-  function on(elem, callback) {
-    elem.onload = elem.onerror = elem.onreadystatechange = function() {
-      var readyState = elem.readyState;
-      if (
-        elem.nodeName === 'IMG' ||
-        !readyState ||
-        readyState === 'complete' ||
-        readyState === 'loaded'
-      ) {
-        callback();
+  function on (elem, fn, param) {
+    var handler = function () {
+      if (elem.nodeName === 'IMG' || readyStates[elem.readyState]) {
+        for (var i = eCount; i--;) {
+          removeEventListener.call(elem, events[i], fn, false);
+        }
+        fn(param);
       }
     };
+
+    for (var i = eCount; i--;) {
+      addEventListener.call(elem, events[i], fn, false);
+    }
   }
 
-  function off(elem) {
-    elem.onload = elem.onerror = elem.onreadystatechange = null;
-  }
-
-  // paraload
-  // ========
-
-  paraload.load = function(url) {
-    return new whif(function(resolve) {
+  // public
+  // ======
+  paraload.load = function (url) {
+    return whif(function (resolve) {
       var elem, orphan;
 
       if (orphanage) {
@@ -126,12 +120,8 @@
         elem = createElement('IMG');
       }
 
-      on(elem, function() {
-        off(elem);
-        if (orphan) {
-          off(orphan);
-          orphan = document.adoptNode(orphan);
-        }
+      on(elem, function () {
+        if (orphan) orphan = document.adoptNode(orphan);
         elem = orphan = null;
         resolve(url);
       });
@@ -146,9 +136,11 @@
     });
   };
 
-  paraload.exec = function(url) {
-    return new whif(function(resolve) {
-      var extension = ext(url), elem;
+  paraload.exec = function (url) {
+    return whif(function (resolve) {
+      var elem,
+          match = url.match(reFileExtension),
+          extension = match && match[1];
 
       if (extension === 'css') {
         elem = createElement('LINK', {
@@ -163,12 +155,7 @@
         });
       }
 
-      on(elem, function() {
-        off(elem);
-        elem = null;
-        resolve(url);
-      });
-
+      on(elem, resolve, url);
       insertInto(head, elem);
     });
   };
@@ -176,36 +163,38 @@
   // dependency tree traversal
   // =========================
 
-  (function traverse(node, dependency) {
+  (function traverse (node, dependency) {
 
     var nodeReset = node,
-      promises = [],
-      firstChild,
-      lines,
-      url,
-      execUrl = function(values){
-        return paraload.exec(values[0]);
-      };
+        promises = [],
+        firstChild,
+        lines,
+        url,
+        execURL = function (values){
+          return paraload.exec(values[0]);
+        };
 
+    // text nodes
+    // ----------
     for (; node; node = node.nextSibling) {
       if (node.nodeType === 3) {
         for (lines = node.nodeValue.split(reLines); lines.length;) {
           if (url = stringTrim.call(lines.shift())) {
             promises.push(
-              whif.join([paraload.load(url), dependency]).then(execUrl)
+              whif.join([paraload.load(url), dependency])
+                  .sync()
+                  .then(execURL)
             );
           }
         }
       }
     }
 
+    if (promises.length) dependency = whif.join(promises);
+
     // element nodes
     // -------------
-
-    node = nodeReset;
-    dependency = promises.length ? whif.join(promises) : dependency;
-
-    for (; node; node = node.nextSibling) {
+    for (node = nodeReset; node; node = node.nextSibling) {
       firstChild = node.firstChild;
       if (node.nodeType === 1 && firstChild) {
         traverse(firstChild, dependency);

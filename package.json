@@ -1,6 +1,6 @@
 {
   "name": "paraload",
-  "version": "0.0.0",
+  "version": "0.2.3",
   "description": "javascript library for parallel resource loading",
   "main": "src/js/paraload.js",
   "author": "espretto",
