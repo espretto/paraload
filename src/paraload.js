@@ -94,14 +94,14 @@
     var handler = function () {
       if (elem.nodeName === 'IMG' || readyStates[elem.readyState]) {
         for (var i = eCount; i--;) {
-          removeEventListener.call(elem, events[i], fn, false);
+          removeEventListener.call(elem, events[i], handler, false);
         }
         fn(param);
       }
     };
 
     for (var i = eCount; i--;) {
-      addEventListener.call(elem, events[i], fn, false);
+      addEventListener.call(elem, events[i], handler, false);
     }
   }
 
