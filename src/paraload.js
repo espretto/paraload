@@ -21,9 +21,9 @@
   // back on IE's attach-/detachEvent though. you cannot .call() them :(
   
   readyStates = {
-    'undefined': true,
+    'loaded': true,
     'complete': true,
-    'loaded': true
+    'undefined': true
   },
 
   events = ['load', 'error', 'readystatechange'],
@@ -62,10 +62,10 @@
   // HTML or XML?
   // ------------
   treeRoot = document.getElementById('paraload') || getFirstElementByTagName('XML'),
-  treeRoot_; // bytes for ugliness
 
-  if (treeRoot && (treeRoot_ = treeRoot.XMLDocument)) {
-    treeRoot = treeRoot_.documentElement;
+  __tmp; // bytes for ugliness
+  if (treeRoot && (__tmp = treeRoot.XMLDocument)) {
+    treeRoot = __tmp.documentElement;
   }
 
   // helpers DOM
@@ -91,12 +91,15 @@
   // event handling
   // --------------
   function on (elem, fn, param) {
+
+    // choose var declaration for proper referencing by removeEventListener
     var handler = function () {
       if (elem.nodeName === 'IMG' || readyStates[elem.readyState]) {
         for (var i = eCount; i--;) {
           removeEventListener.call(elem, events[i], handler, false);
         }
         fn(param);
+        elem = null; // avoid memory leak
       }
     };
 
@@ -121,8 +124,8 @@
       }
 
       on(elem, function () {
-        if (orphan) orphan = document.adoptNode(orphan);
-        elem = orphan = null;
+        orphan && document.adoptNode(orphan); // re-adopt
+        elem = orphan = null; // avoid memory leaks
         resolve(url);
       });
 
