@@ -3,6 +3,8 @@ paraload
 
 paraload is an asset loader (~1.9kb minified and gzipped) for parallel loading yet ordered execution of `<script>`s and `<link>`s with respect to their dependencies. it ships with a minimal [Promisese A+ v1.1](http://promises-aplus.github.io/promises-spec/) compliant library [whif](https://github.com/espretto/whif), thus exposes two globals: `whif` and `paraload` (which you may both rename via `.noConflict()` hook).
 
+**deprecation notice:** this library lost its purpose to the new HTTP/2 protocol. The loading strategy should be implemented on the server-side using the Server Push, effectively loading multiple resources in response to a single request.
+
 usage
 -----
 paraload loads all resources in parallel yet executes them in the order given by your __dependency tree__. the `<xml>` node, one root node within it (no root siblings), and the `<script>` below are required. tag names within `<xml>` can be random. separate urls by line terminators. in this typical example _jquery_ and _underscore_ will be executed as soon as they arrive. _backbone_ will start loading right away just like the others but will only be executed after the parent level's resources have been executed.
